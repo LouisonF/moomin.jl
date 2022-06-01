@@ -4,6 +4,8 @@ function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, 
   printLevel < 2 && set_silent(MILP)
   cont = true
   counter = 1
+  allowed_errors = enumerate*0.1 #max retry to avoid infinite loop
+  count_errors = 0
   outputColours = []
   while cont
     printLevel == 0 || @info "Solving MILP #$counter..."
@@ -13,7 +15,21 @@ function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, 
     (solFound & (printLevel > 0)) && @info "Found solution!"
     (!solFound & (printLevel > 0) & (counter > 1) ) && @info "No optimum found."
     (!solFound & (counter == 1) ) && @warn "Couldn't solve MILP #1."
-    timeLimitReached && @warn "Solver time limit reached."
+    if timeLimitReached
+        count_errors = count_errors+1
+        @warn "Solver time limit reached."
+        if count_errors>allowed_errors
+            counter=counter+1
+            @warn "Max try reached."
+        end
+        @warn string(count_errors) * " failed MILP"
+        if counter<enumerate
+            cont=true
+        else
+            cont=false
+        end
+        continue
+    end
     if solFound
       if isempty(outputColours)
         outputColours = interpretSolution(value.(MILP[:xPlus]),
