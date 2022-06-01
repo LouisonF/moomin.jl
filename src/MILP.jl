@@ -1,6 +1,6 @@
-function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, printLevel=1, timeLimit=1000)
+function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, printLevel=1, timeLimit=1000,mipgap=0.01)
   printLevel == 0 || @info "Creating MILP..."
-  MILP = createMILP(model, optimizer, stoichiometry=stoichiometry, timeLimit=timeLimit)
+  MILP = createMILP(model, optimizer, stoichiometry=stoichiometry, timeLimit=timeLimit,mipgap=mipgap)
   printLevel < 2 && set_silent(MILP)
   cont = true
   counter = 1
