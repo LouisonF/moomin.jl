@@ -69,10 +69,11 @@ function fillOutputs!(model::MoominModel, outputColours)
   model.reactions.combinedOutput = convert.(Int64, combined)
 end
 
-function createMILP(model::MoominModel, optimizer; stoichiometry=true, timeLimit=1000)
+function createMILP(model::MoominModel, optimizer; stoichiometry=true, timeLimit=1000,mipgap=0.01)
   MILP = JuMP.Model(optimizer)
   if solver_name(MILP) == "CPLEX"
     set_optimizer_attribute(MILP, "CPXPARAM_TimeLimit", timeLimit)
+    set_optimizer_attribute(MILP, "CPXPARAM_MIP_Tolerances_MIPGap", mipgap)
   elseif solver_name(MILP) == "Gurobi"
     set_optimizer_attribute(MILP, "TimeLimit", timeLimit)
   end

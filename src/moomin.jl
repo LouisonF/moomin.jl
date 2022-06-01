@@ -59,6 +59,7 @@ include("output.jl")
 - `enumerate`:      Int, how many alternative solutions are sought at most
 - `printLevel`:     Int, determine how much progress info to print (0-2, default: 1)
 - `timeLimit`:      Int, time limit for the MILP solver, in seconds (default: 1000)
+- `mipgap`:        Double, parameter to set CPLEX MIPGAP.
 
 """
 function runMoomin(pathToData, pathToModel, optimizer;
@@ -66,7 +67,8 @@ function runMoomin(pathToData, pathToModel, optimizer;
                modelStr="model",
             	pThresh=0.9, alpha=3, precision=7,
                stoichiometry=true, enumerate=1,
-               printLevel=1, timeLimit=1000)
+               printLevel=1, timeLimit=1000,
+               mipgap=0.01)
 
    model = readModel(pathToData, pathToModel;
    	delimiter=delimiter, geneIDhead=geneIDhead, PPDEhead=PPDEhead, logFChead=logFChead,
@@ -74,7 +76,7 @@ function runMoomin(pathToData, pathToModel, optimizer;
    	pThresh=pThresh, alpha=alpha, precision=precision)
 
    solve!(model, optimizer, stoichiometry=stoichiometry, enumerate=enumerate,
-            printLevel=printLevel, timeLimit=timeLimit)
+            printLevel=printLevel, timeLimit=timeLimit,mipgap=mipgap)
 
    return model
 end
