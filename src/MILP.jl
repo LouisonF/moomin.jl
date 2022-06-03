@@ -107,6 +107,7 @@ function createMILP(model::MoominModel, optimizer; stoichiometry=true, timeLimit
   if solver_name(MILP) == "CPLEX"
     set_optimizer_attribute(MILP, "CPXPARAM_TimeLimit", timeLimit)
     set_optimizer_attribute(MILP, "CPXPARAM_MIP_Tolerances_MIPGap", mipgap)
+    set_optimizer_attribute(MILP, "CPXPARAM_MIP_Strategy_PresolveNode", 1) #force presolve at nodes
 
   elseif solver_name(MILP) == "Gurobi"
     set_optimizer_attribute(MILP, "TimeLimit", timeLimit)
