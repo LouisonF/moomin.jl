@@ -3,20 +3,36 @@ function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, 
   MILP = createMILP(model, optimizer, stoichiometry=stoichiometry, timeLimit=timeLimit,mipgap=mipgap)
   printLevel < 2 && set_silent(MILP)
   cont = true
+  timeLimitReached = false
+  solFound = false
   counter = 1
   allowed_errors = enumerate*0.1 #max retry to avoid infinite loop
   count_errors = 0
   outputColours = []
+  sol_val = 0
   while cont
     printLevel == 0 || @info "Solving MILP #$counter..."
     optimize!(MILP)
+    if result_count(MILP) == 0
+        @warn "NO RESULT"
+        set_optimizer_attribute(MILP,"CPXPARAM_RandomSeed",abs(rand(Int8)))
+        MILP = createMILP(model, optimizer, stoichiometry=stoichiometry, timeLimit=timeLimit,mipgap=mipgap)
+        continue
+    end
+    #if termination_status(MILP) ==
     solFound = termination_status(MILP) == MOI.OPTIMAL
     timeLimitReached = termination_status(MILP) == MOI.TIME_LIMIT
     (solFound & (printLevel > 0)) && @info "Found solution!"
     (!solFound & (printLevel > 0) & (counter > 1) ) && @info "No optimum found."
-    (!solFound & (counter == 1) ) && @warn "Couldn't solve MILP #1."
+    (!solFound & (printLevel > 0)) && @warn "Couldn't solve MILP."
     if timeLimitReached
         count_errors = count_errors+1
+        #exclude sol in error
+        #algo stuck on solution, change seed and re-generate problem
+        if relative_gap(MILP) > 1 #if relative gap above 100% recreate problem
+            set_optimizer_attribute(MILP,"CPXPARAM_RandomSeed",abs(rand(Int8)))
+            MILP = createMILP(model, optimizer, stoichiometry=stoichiometry, timeLimit=timeLimit,mipgap=mipgap)
+        end
         @warn "Solver time limit reached."
         if count_errors>allowed_errors
             counter=counter+1
@@ -42,6 +58,7 @@ function solve!(model::MoominModel, optimizer; enumerate=1, stoichiometry=true, 
                                           model.reactions.inputColours,
                                           model.reactions.reversible)]
       end
+      sol_val = objective_value(MILP)
       updateMILP!(MILP, outputColours)
     end
     cont = solFound & (counter<enumerate)
@@ -90,6 +107,7 @@ function createMILP(model::MoominModel, optimizer; stoichiometry=true, timeLimit
   if solver_name(MILP) == "CPLEX"
     set_optimizer_attribute(MILP, "CPXPARAM_TimeLimit", timeLimit)
     set_optimizer_attribute(MILP, "CPXPARAM_MIP_Tolerances_MIPGap", mipgap)
+
   elseif solver_name(MILP) == "Gurobi"
     set_optimizer_attribute(MILP, "TimeLimit", timeLimit)
   end
